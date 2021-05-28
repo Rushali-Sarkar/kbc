@@ -1,74 +1,106 @@
 from questions import QUESTIONS
-
+import random
 
 def isAnswerCorrect(question, answer):
+    return question["answer"] == answer
 
-    '''
-    :param question: question (Type JSON)
-    :param answer:   user's choice for the answer (Type INT)
-    :return:
-        True if the answer is correct
-        False if the answer is incorrect
-    '''
-
-    return True if answer == 2 else False      #remove this
-
-
-def lifeLine(ques):
-
-    '''
-    :param ques: The question for which the lifeline is asked for. (Type JSON)
-    :return: delete the key for two incorrect options and return the new ques value. (Type JSON)
-    '''
-
-
-def kbc():
-    '''
-        Rules to play KBC:
-        * The user will have 15 rounds
-        * In each round, user will get a question
-        * For each question, there are 4 choices out of which ONLY one is correct.
-        * Prompt the user for input of Correct Option number and give feedback about right or wrong.
-        * Each correct answer get the user money corresponding to the question and displays the next question.
-        * If the user is:
-            1. below questions number 5, then the minimum amount rewarded is Rs. 0 (zero)
-            2. As he correctly answers question number 5, the minimum reward becomes Rs. 10,000 (First level)
-            3. As he correctly answers question number 11, the minimum reward becomes Rs. 3,20,000 (Second Level)
-        * If the answer is wrong, then the user will return with the minimum reward.
-        * If the user inputs "lifeline" (case insensitive) as input, then hide two incorrect options and
-            prompt again for the input of answer.
-        * NOTE:
-            50-50 lifeline can be used ONLY ONCE.
-            There is no option of lifeline for the last question( ques no. 15 ), even if the user has not used it before.
-        * If the user inputs "quit" (case insensitive) as input, then user returns with the amount he has won until now,
-            instead of the minimum amount.
-    '''
-
-    #  Display a welcome message only once to the user at the start of the game.
-    #  For each question, display the prize won until now and available life line.
-    # For now, the below code works for only one question without LIFE-LINE and QUIT checks
-
-    print(f'\tQuestion 1: {QUESTIONS[0]["name"]}' )
-    print(f'\t\tOptions:')
-    print(f'\t\t\tOption 1: {QUESTIONS[0]["option1"]}')
-    print(f'\t\t\tOption 2: {QUESTIONS[0]["option2"]}')
-    print(f'\t\t\tOption 3: {QUESTIONS[0]["option3"]}')
-    print(f'\t\t\tOption 4: {QUESTIONS[0]["option4"]}')
-    ans = input('Your choice ( 1-4 ) : ')
-
-    # check for the input validations
-
-    if isAnswerCorrect(QUESTIONS[0], int(ans) ):
-        # print the total money won.
-        # See if the user has crossed a level, print that if yes
-        print('\nCorrect !')
-
+def fifty_fifty(question):
+    answer = "option" + str(question["answer"])
+    options = set(["option1", "option2", "option3", "option4"])
+    options.remove(answer)
+    delete1 = random.choice(list(options))
+    options.remove(delete1)
+    delete2 = random.choice(list(options))
+    question[delete1] = ""
+    question[delete2] = ""
+    return question
+    
+def lifeline_menu(isLifeLineTaken: bool, current_round: int) -> None:
+    if not isLifeLineTaken and current_round != 14:
+        print("To use 50-50 lifeline please type lifeline")
+    elif current_round == 14 and not isLifeLineTaken:
+        print("Sorry you cannot use lifeline in the last round")
     else:
-        # end the game now.
-        # also print the correct answer
-        print('\nIncorrect !')
+        print("You have already used your lifeline")
+    return
+    
+def choice_menu(current_round: int, money_won: int, minimum_money_rewarded: int) -> None:
+    print("1. Play Round", current_round + 1)
+    print("2. Quit with", money_won)
+    print("If you give wrong answer in this round you will take home Rs.", minimum_money_rewarded)
+    if money_won > minimum_money_rewarded:
+        print("You will loose: Rs.", money_won - minimum_money_rewarded)
+    print("Please enter your choice")
+    return
 
-    # print the total money won in the end.
+def print_question(current_question) -> None:
+    print(current_question["name"])
+    print("Your options are: ")
+    print("1.", current_question["option1"])
+    print("2.", current_question["option2"])
+    print("3.", current_question["option3"])
+    print("4.", current_question["option4"])
+    return
 
+def update_minimum_money(current_round: int, money_won: int, minimum_money_rewarded: int) -> int:
+    
+    if current_round == 4:
+        print("Congratulations on passing Round 5.")
+        print("Now you will surely take Rs.", money_won, "back home")
+        minimum_money_rewarded = money_won
+    
+    elif current_round == 10:
+        print("Congratulations on passing Round 11.")
+        print("Now you will surely take Rs.", money_won, "back home")
+        minimum_money_rewarded = money_won
+        
+    return minimum_money_rewarded
+        
+    
+def kbc():
 
+    isLifeLineTaken = False
+    money_won = 0
+    minimum_money_rewarded = 0
+    quit = False
+    choice = 0
+    
+    print("Welcome to Kaun Banega Crorepati")    
+    for current_round in range(15):
+        
+        print("Welcome to Round", current_round + 1)
+        choice_menu(current_round, money_won, minimum_money_rewarded)
+        choice = int(input())
+        if choice == 2:
+            print("Congratulations! You have won: Rs.", minimum_money_rewarded)
+            return
+        current_question = QUESTIONS[current_round]
+        print_question(current_question)
+        print("Please press enter to answer the current Question")
+        lifeline_menu(isLifeLineTaken, current_round)
+        choice = input()
+        if choice == "lifeline":
+            isLifeLineTaken = True
+            current_question = fifty_fifty(QUESTIONS[current_round])
+            print("The Question after removing two incorrect options is: ")
+            print_question(current_question)
+        print("Please Enter the correct option")
+        correct_option = QUESTIONS[current_round]["answer"]
+        option = int(input())
+        
+        if correct_option == option:
+            print("Congratulations! you have given the correct answer to the question")
+            money_won = QUESTIONS[current_round]["money"]
+            print("You have won: Rs.", money_won)
+            minimum_money_rewarded = update_minimum_money(current_round, money_won, minimum_money_rewarded)
+            
+        else:
+            print("Sorry! your answer is wrong")
+            print("Thank you for playing Kaun Banega Crorepati")
+            print("You have won: Rs. ", minimum_money_rewarded)
+            return
+    
+    print("Congratulations on wining 1 crore rupees!!")
+    return
+            
 kbc()
